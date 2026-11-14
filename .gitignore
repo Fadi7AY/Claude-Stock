@@ -1,0 +1,4 @@
+.env
+data/
+trader/
+__pycache__/
