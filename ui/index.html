@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Halal Stock Bot</title>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f4f3f0; --surface:#fcfcfb; --surface-2:#f0efec; --border:#dfddd6;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#7c7a74;
+  --accent:#2a78d6; --accent-ink:#ffffff; --neg:#e34948;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  --good-bg:#e3f4e3; --warn-bg:#fdf0d0; --crit-bg:#fbe3e3; --info-bg:#e1edfb;
+}
+@media (prefers-color-scheme:dark){:root{
+  color-scheme:dark;
+  --bg:#111110; --surface:#1a1a19; --surface-2:#242422; --border:#353532;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8d85;
+  --accent:#3987e5; --accent-ink:#ffffff; --neg:#e66767;
+  --good-bg:#12300f; --warn-bg:#3a2d08; --crit-bg:#3d1616; --info-bg:#14273f;
+}}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex}
+nav{width:200px;flex:none;background:var(--surface);border-right:1px solid var(--border);padding:18px 10px;display:flex;flex-direction:column;gap:2px}
+nav .brand{font-weight:700;font-size:15px;padding:4px 10px 16px}
+nav .brand small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+nav button{all:unset;cursor:pointer;padding:9px 12px;border-radius:8px;color:var(--text-2);font-weight:500}
+nav button:hover{background:var(--surface-2)}
+nav button.on{background:var(--info-bg);color:var(--text)}
+nav button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+nav .spacer{flex:1}
+nav .clock{font-size:12px;color:var(--muted);padding:8px 12px}
+main{flex:1;min-width:0;overflow:auto;padding:22px 26px 60px}
+h1{font-size:20px;margin:0 0 4px} h2{font-size:15px;margin:0 0 12px}
+.sub{color:var(--text-2);margin:0 0 18px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.row{display:flex;gap:16px;flex-wrap:wrap}.row>.card{flex:1;min-width:300px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.tile .k{color:var(--text-2);font-size:12px}.tile .v{font-size:22px;font-weight:650;margin-top:2px;white-space:nowrap}
+.tile .n{color:var(--muted);font-size:12px}
+.btn{font:inherit;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);padding:7px 13px;border-radius:8px;font-weight:550}
+.btn:hover{background:var(--surface-2)}.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{border-color:var(--crit);color:var(--crit)}.btn.small{padding:4px 9px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:default}
+input,select{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 9px;min-width:0}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text-2);font-weight:550}
+label.f small{font-weight:400;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;background:var(--surface-2);color:var(--text-2);white-space:nowrap}
+.pill.good{background:var(--good-bg);color:var(--text)}.pill.warn{background:var(--warn-bg);color:var(--text)}
+.pill.crit{background:var(--crit-bg);color:var(--text)}.pill.info{background:var(--info-bg);color:var(--text)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.good .dot{background:var(--good)}.warn .dot{background:var(--warn)}.crit .dot{background:var(--crit)}.info .dot{background:var(--accent)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;color:var(--text-2);font-weight:600;font-size:12px;padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.empty{color:var(--muted);padding:14px 4px}
+.note{background:var(--info-bg);border-radius:10px;padding:10px 12px;margin-bottom:14px}
+.note.warn{background:var(--warn-bg)}.note.crit{background:var(--crit-bg)}
+.msg{font-size:13px;color:var(--text-2)}
+.chart{position:relative}.chart svg{display:block;width:100%;height:210px}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 9px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.16);white-space:nowrap;display:none;z-index:2}
+.tip b{display:block;font-size:13px}
+.plat{border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--surface);display:flex;flex-direction:column;gap:8px}
+.plat h3{margin:0;font-size:15px}.plat p{margin:0;color:var(--text-2);font-size:13px}
+.plats{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+ol{margin:6px 0 12px;padding-left:20px;color:var(--text-2)}
+pre.log{margin:0;font:12px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;word-break:break-word;max-height:70vh;overflow:auto}
+#toast{position:fixed;right:20px;bottom:20px;background:var(--text);color:var(--bg);padding:10px 14px;border-radius:10px;display:none;max-width:420px;z-index:5}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--text-2);margin-top:6px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+@media (max-width:760px){body{flex-direction:column}nav{width:auto;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--border)}nav .brand,nav .spacer,nav .clock{display:none}main{padding:16px}}
+</style>
+</head>
+<body>
+<nav id="nav"></nav>
+<main id="main"></main>
+<div id="toast" role="status"></div>
+<script>
+"use strict";
+const TOKEN = "__TOKEN__";
+const PAGES = [["dash","Dashboard"],["trades","Trades"],["halal","Halal list"],["platforms","Platforms"],["settings","Settings"],["log","Activity log"]];
+let page = PAGES.some(p => p[0] === location.hash.slice(1)) ? location.hash.slice(1) : "dash", S = null, H = null, P = null, addForm = null, tradeFilter = "real";
+
+// ---------- helpers
+function h(tag, attrs, ...kids){
+  const e = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs||{})){
+    if (v == null || v === false) continue;
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (k === "value") e.value = v;
+    else if (k === "checked" || k === "disabled" || k === "selected") e[k] = !!v;
+    else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()){ if (c == null || c === false) continue; e.append(c.nodeType ? c : document.createTextNode(String(c))); }
+  return e;
+}
+const SVGNS = "http://www.w3.org/2000/svg";
+function s(tag, attrs){ const e = document.createElementNS(SVGNS, tag); for (const [k,v] of Object.entries(attrs||{})) e.setAttribute(k, v); return e; }
+async function api(path, body){
+  const r = await fetch(path, {method: body ? "POST" : "GET", headers: {"X-Token": TOKEN, "Content-Type": "application/json"}, body: body ? JSON.stringify(body) : undefined});
+  const d = await r.json().catch(() => ({error: "bad response"}));
+  if (!r.ok) throw new Error(d.error || "request failed");
+  return d;
+}
+function toast(msg){ const t = document.getElementById("toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = "none", 6000); }
+async function act(fn, okMsg){ try { const r = await fn(); if (okMsg) toast(typeof okMsg === "function" ? okMsg(r) : okMsg); await refresh(true); return r; } catch(e){ toast(e.message); } }
+const money = (v, cur) => v == null ? "–" : (v < 0 ? "−" : "") + (cur === "USDT" ? "" : "$") + Math.abs(v).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2}) + (cur === "USDT" ? " USDT" : "");
+const signed = v => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + "$" + Math.abs(v).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+const num = (v, d=2) => v == null ? "–" : Number(v).toLocaleString("en-US", {minimumFractionDigits:d, maximumFractionDigits:d});
+const pill = (text, kind) => h("span", {class: "pill " + (kind||"")}, h("span", {class:"dot"}), text);
+
+// ---------- charts
+function chartBox(build){
+  const box = h("div", {class:"chart"}), tip = h("div", {class:"tip"});
+  const svg = s("svg", {viewBox:"0 0 600 210", preserveAspectRatio:"none", role:"img"});
+  box.append(svg, tip);
+  const show = (xPct, yPct, title, sub) => { tip.replaceChildren(h("b", {}, title), sub); tip.style.display = "block"; tip.style.left = Math.min(Math.max(xPct, 2), 70) + "%"; tip.style.top = Math.max(yPct - 22, 0) + "%"; };
+  build(svg, show, () => tip.style.display = "none");
+  return box;
+}
+function axis(svg, lo, hi, y){
+  const ticks = [lo, (lo+hi)/2, hi];
+  if (lo < 0 && hi > 0) ticks[1] = 0;
+  for (const t of ticks){
+    svg.append(s("line", {x1:46, x2:596, y1:y(t), y2:y(t), stroke:"var(--border)", "stroke-width": t === 0 ? 1.2 : .6, "vector-effect":"non-scaling-stroke"}));
+    const tx = s("text", {x:42, y:y(t)+4, "text-anchor":"end", "font-size":11, fill:"var(--muted)"}); tx.textContent = (t<0?"−":"") + "$" + Math.abs(Math.round(t)); svg.append(tx);
+  }
+}
+function scaleY(vals){
+  let lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
+  if (lo === hi){ hi = 1; lo = lo < 0 ? lo : -0; }
+  const pad = (hi - lo) * .12; lo -= lo < 0 ? pad : 0; hi += pad;
+  return [lo, hi, v => 14 + (hi - v) / (hi - lo) * 168];
+}
+function lineChart(points){
+  return chartBox((svg, show, hide) => {
+    const [lo, hi, y] = scaleY(points.map(p => p.value));
+    axis(svg, lo, hi, y);
+    const x = i => points.length === 1 ? 321 : 52 + i * (540 / (points.length - 1));
+    const d = points.map((p,i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(p.value).toFixed(1)).join(" ");
+    svg.append(s("path", {d, fill:"none", stroke:"var(--accent)", "stroke-width":2, "stroke-linejoin":"round", "vector-effect":"non-scaling-stroke"}));
+    const hair = s("line", {y1:14, y2:182, stroke:"var(--muted)", "stroke-width":1, "vector-effect":"non-scaling-stroke", visibility:"hidden"});
+    const dot = s("circle", {r:4.5, fill:"var(--accent)", stroke:"var(--surface)", "stroke-width":2, visibility:"hidden"});
+    svg.append(hair, dot);
+    for (const i of [0, points.length-1]){ if (i < 0 || (i && points.length === 1)) continue; const t = s("text", {x:x(i), y:204, "text-anchor": i ? "end" : "start", "font-size":11, fill:"var(--muted)"}); t.textContent = points[i].date.slice(5); svg.append(t); }
+    const hit = s("rect", {x:46, y:0, width:550, height:190, fill:"transparent"});
+    hit.addEventListener("pointermove", ev => { const r = svg.getBoundingClientRect(); const px = (ev.clientX - r.left) / r.width * 600; let i = Math.round((px - 52) / (540 / Math.max(points.length - 1, 1))); i = Math.max(0, Math.min(points.length - 1, i)); hair.setAttribute("x1", x(i)); hair.setAttribute("x2", x(i)); hair.setAttribute("visibility","visible"); dot.setAttribute("cx", x(i)); dot.setAttribute("cy", y(points[i].value)); dot.setAttribute("visibility","visible"); show(x(i)/6 + 1.5, y(points[i].value)/2.1, signed(points[i].value), "total after " + points[i].date); });
+    hit.addEventListener("pointerleave", () => { hide(); hair.setAttribute("visibility","hidden"); dot.setAttribute("visibility","hidden"); });
+    svg.append(hit);
+  });
+}
+function barChart(days){
+  return chartBox((svg, show, hide) => {
+    const [lo, hi, y] = scaleY(days.map(p => p.value));
+    axis(svg, lo, hi, y);
+    const slot = 540 / Math.max(days.length, 8), w = Math.min(slot - 2, 24);
+    days.forEach((p, i) => {
+      const cx = 52 + slot * (i + .5), top = Math.min(y(p.value), y(0)), ht = Math.max(Math.abs(y(p.value) - y(0)), 1.5);
+      const r = s("rect", {x: cx - w/2, y: top, width: w, height: ht, rx: Math.min(4, ht/2), fill: p.value >= 0 ? "var(--accent)" : "var(--neg)", tabindex:0});
+      const on = () => show(cx/6, top/2.1, signed(p.value), p.date + (p.value >= 0 ? " · gain" : " · loss"));
+      r.addEventListener("pointerenter", on); r.addEventListener("focus", on); r.addEventListener("pointerleave", hide); r.addEventListener("blur", hide);
+      svg.append(r);
+      if (i === 0 || i === days.length - 1){ const t = s("text", {x:cx, y:204, "text-anchor":"middle", "font-size":11, fill:"var(--muted)"}); t.textContent = p.date.slice(5); svg.append(t); }
+    });
+  });
+}
+
+// ---------- pages
+function tile(k, v, n){ return h("div", {class:"tile"}, h("div", {class:"k"}, k), h("div", {class:"v"}, v), n ? h("div", {class:"n"}, n) : null); }
+
+function botBar(){
+  const b = S.bot, br = S.broker;
+  const modeSel = h("select", {id:"mode", disabled: b.running, "aria-label":"Mode"},
+    h("option", {value:"dry", selected: b.mode === "dry"}, "Dry run - show trades, send nothing"),
+    h("option", {value:"trade", selected: b.mode === "trade", disabled: !br.linked}, br.linked ? "Trade on " + br.name + (br.paper ? " (practice money)" : " (REAL MONEY)") : "Trade - link a platform first"));
+  const start = async () => {
+    const mode = document.getElementById("mode").value;
+    try { await api("/api/bot/start", {mode}); }
+    catch(e){
+      if (e.message !== "REAL_MONEY_CONFIRM") return toast(e.message);
+      const a = prompt("This platform trades with REAL MONEY. The bot will buy and sell on its own.\n\nType REAL MONEY to start.");
+      if (a !== "REAL MONEY") return toast("Not started.");
+      try { await api("/api/bot/start", {mode, confirm: a}); } catch(e2){ return toast(e2.message); }
+    }
+    refresh(true);
+  };
+  const stop = () => {
+    if (S.open_trades.length && !confirm("The bot has open positions. If you stop it, nothing will close them at the end of the day" + (br.native_exits ? "" : " and the stop-loss will NOT be watched") + ".\n\nStop anyway?")) return;
+    act(() => api("/api/bot/stop", {}));
+  };
+  return h("div", {class:"card"},
+    h("div", {class:"bar"},
+      b.running ? pill(b.mode === "dry" ? "Running - dry run" : "Running - trading", b.mode === "dry" ? "info" : "good") : pill("Stopped", ""),
+      modeSel,
+      b.running ? h("button", {class:"btn danger", onclick: stop}, "Stop bot") : h("button", {class:"btn primary", onclick: start}, "Start bot"),
+      h("span", {style:"flex:1"}),
+      pill(S.market_open ? "US market open" : "US market closed", S.market_open ? "good" : ""),
+      S.breadth && S.breadth.score != null ? pill("Market health " + Math.round(S.breadth.score) + "/100", S.breadth.score < S.config.safety.min_breadth_score ? "crit" : "") : null),
+    h("div", {class:"msg", style:"margin-top:10px"}, b.running ? "Now: " + b.message + (b.last_cycle ? "  (checked " + b.last_cycle + " New York time)" : "") : "The bot is stopped. It only trades while this app is open and the bot is started."));
+}
+
+function positionsTable(){
+  const br = S.broker, held = (br.positions || []), by = Object.fromEntries(S.open_trades.map(t => [t.symbol, t]));
+  const syms = [...new Set([...held.map(p => p.symbol), ...S.open_trades.map(t => t.symbol)])];
+  if (!syms.length) return h("div", {class:"empty"}, "No open positions.");
+  return h("div", {class:"tw"}, h("table", {},
+    h("thead", {}, h("tr", {}, ["Stock","Shares","Entry","Now","Stop","Target","Open P&L",""].map((c,i) => h("th", {class: i && i < 7 ? "num" : ""}, c)))),
+    h("tbody", {}, syms.map(sym => {
+      const p = held.find(x => x.symbol === sym) || {}, t = by[sym] || {};
+      const entry = p.avg_price ?? t.entry, now = p.price ?? t.last, qty = p.qty ?? t.qty;
+      const pnl = p.pnl ?? (entry && now ? (now - entry) * qty : null);
+      return h("tr", {}, h("td", {}, h("b", {}, sym), t.symbol ? "" : h("div", {class:"msg"}, "not opened by the bot")),
+        h("td", {class:"num"}, num(qty, qty % 1 ? 3 : 0)), h("td", {class:"num"}, num(entry)), h("td", {class:"num"}, num(now)),
+        h("td", {class:"num"}, num(t.stop)), h("td", {class:"num"}, num(t.target)), h("td", {class:"num"}, signed(pnl == null ? null : Math.round(pnl*100)/100)),
+        h("td", {}, h("button", {class:"btn small danger", onclick: () => confirm("Sell all " + sym + " now?") && act(() => api("/api/close", {symbols:[sym]}), "Closing " + sym)}, "Close")));
+    }))));
+}
+
+function tradesTable(list, limit){
+  if (!list.length) return h("div", {class:"empty"}, "No trades yet.");
+  return h("div", {class:"tw"}, h("table", {},
+    h("thead", {}, h("tr", {}, ["Date","Time","Stock","Shares","Entry","Exit","Stop","Target","Result","P&L","Platform"].map((c,i) => h("th", {class: i > 2 && i < 8 || i === 9 ? "num" : ""}, c)))),
+    h("tbody", {}, list.slice(0, limit || 400).map(t => h("tr", {},
+      h("td", {}, t.date), h("td", {}, t.opened_at + (t.closed_at ? "–" + t.closed_at : "")), h("td", {}, h("b", {}, t.symbol)),
+      h("td", {class:"num"}, num(t.qty, t.qty % 1 ? 3 : 0)), h("td", {class:"num"}, num(t.entry)), h("td", {class:"num"}, num(t.exit)),
+      h("td", {class:"num"}, num(t.stop)), h("td", {class:"num"}, num(t.target)),
+      h("td", {}, t.dry ? pill("dry run", "info") : t.status === "open" ? pill("open", "warn") : pill(t.close_reason || "closed", (t.pnl||0) > 0 ? "good" : (t.pnl||0) < 0 ? "crit" : "")),
+      h("td", {class:"num"}, t.dry || t.status === "open" ? "–" : signed(t.pnl)), h("td", {}, t.dry ? "–" : t.account_name))))));
+}
+
+function pageDash(){
+  const br = S.broker, st = S.stats, a = br.account, cur = a && a.currency;
+  const out = [h("h1", {}, "Dashboard")];
+  if (!br.linked) out.push(h("div", {class:"note"}, "No trading platform is linked yet. You can run a dry run now, or ", h("a", {href:"#", onclick: e => { e.preventDefault(); go("platforms"); }}, "link a platform"), " (the built-in Simulator needs no sign-up)."));
+  else if (br.error) out.push(h("div", {class:"note crit"}, "Cannot reach " + br.name + ": " + br.error));
+  else if (!br.paper) out.push(h("div", {class:"note warn"}, br.name + " is a REAL MONEY account." + (br.native_exits ? "" : " This platform has no stop-loss orders: the bot watches the price itself, so keep this app open while a position is open.")));
+  out.push(botBar());
+  out.push(h("div", {class:"tiles"},
+    tile("Account value", a ? money(a.equity, cur) : "–", br.linked ? br.name + (br.paper ? " · practice" : " · real") : "no platform"),
+    tile("Cash available", a ? money(a.cash, cur) : "–", "the bot never uses margin"),
+    tile("P&L today", signed(st.today), st.trades_today + " of " + S.config.risk.max_trades_per_day + " trades used"),
+    tile("P&L this week", signed(st.week), "limit −$" + S.config.safety.max_weekly_loss_usd),
+    tile("Total P&L", signed(st.total), st.count + " closed trades"),
+    tile("Win rate", st.win_rate == null ? "–" : st.win_rate + "%", st.count ? st.wins + " wins · " + st.losses + " losses" : "no trades yet")));
+  out.push(h("div", {class:"row"},
+    h("div", {class:"card"}, h("h2", {}, "Total profit and loss"), st.curve.length ? lineChart(st.curve) : h("div", {class:"empty"}, "Appears after the first closed trade.")),
+    h("div", {class:"card"}, h("h2", {}, "Profit and loss per day"), st.daily.length ? [barChart(st.daily), h("div", {class:"legend"}, h("span", {}, h("span", {class:"sw", style:"background:var(--accent)"}), "Gain"), h("span", {}, h("span", {class:"sw", style:"background:var(--neg)"}), "Loss"))] : h("div", {class:"empty"}, "Appears after the first closed trade."))));
+  out.push(h("div", {class:"card"}, h("div", {class:"bar", style:"margin-bottom:8px"}, h("h2", {style:"margin:0;flex:1"}, "Open positions"),
+    (br.positions||[]).length || S.open_trades.length ? h("button", {class:"btn small danger", onclick: () => confirm("Sell every position the bot opened, now?") && act(() => api("/api/close", {}), r => "Closed " + r.closed + " position(s)")}, "Close all") : null), positionsTable()));
+  out.push(h("div", {class:"card"}, h("h2", {}, "Latest trades"), tradesTable(S.trades, 8)));
+  return out;
+}
+
+function pageTrades(){
+  const st = S.stats;
+  const list = S.trades.filter(t => tradeFilter === "all" ? true : tradeFilter === "dry" ? t.dry : !t.dry);
+  const sel = h("select", {"aria-label":"Show", onchange: e => { tradeFilter = e.target.value; render(); }},
+    [["real","Real trades"],["dry","Dry-run signals"],["all","Everything"]].map(([v,l]) => h("option", {value:v, selected: tradeFilter === v}, l)));
+  return [h("h1", {}, "Trades"), h("p", {class:"sub"}, "Every trade the bot opened and how it ended. Also saved to data/trades.csv."),
+    h("div", {class:"tiles"}, tile("Closed trades", st.count), tile("Win rate", st.win_rate == null ? "–" : st.win_rate + "%"),
+      tile("Average win", signed(st.avg_win)), tile("Average loss", signed(st.avg_loss)), tile("Total P&L", signed(st.total))),
+    h("div", {class:"card"}, h("div", {class:"bar", style:"margin-bottom:10px"}, sel, h("span", {class:"msg"}, list.length + " shown")), tradesTable(list))];
+}
+
+function pageHalal(){
+  if (!H) return [h("h1", {}, "Halal list"), h("div", {class:"empty"}, "Loading…")];
+  const L = H.limits, sc = H.screen, counts = {};
+  H.rows.forEach(r => counts[r.status] = (counts[r.status]||0) + 1);
+  const kind = {HALAL:"good", NOT_HALAL:"crit", UNKNOWN:"warn", NOT_SCREENED:""}, label = {HALAL:"Halal", NOT_HALAL:"Not halal", UNKNOWN:"Unknown", NOT_SCREENED:"Not checked yet"};
+  const setList = (key, sym, add) => { const cur = new Set(S.config.halal[key]); add ? cur.add(sym) : cur.delete(sym); return api("/api/config", {halal: {[key]: [...cur]}}); };
+  const addInput = h("input", {placeholder:"Add tickers, e.g. NVDA AMD", "aria-label":"Add tickers", style:"width:230px"});
+  const add = () => { const v = addInput.value.trim(); if (!v) return; act(async () => { const wl = [...S.config.watchlist, ...v.toUpperCase().split(/[\s,]+/)]; await api("/api/config", {watchlist: wl}); await api("/api/halal/screen", {symbols: v}); }, "Added - checking now"); };
+  return [h("h1", {}, "Halal list"),
+    h("p", {class:"sub"}, "The bot only trades stocks marked Halal here. Unknown and unchecked stocks are never traded."),
+    h("div", {class:"note"}, "Rules: no banks, insurance, alcohol, tobacco, gambling, pork or entertainment media" + (L.exclude_weapons ? ", weapons" : "") + ". Debt under " + L.max_debt_pct + "% and cash + interest-bearing holdings under " + L.max_liquid_pct + "% of market value; interest income under " + L.max_impure_income_pct + "% of revenue. Automatic screen from company filings - not a fatwa. Compare with Zoya or Musaffa, or ask your scholar."),
+    h("div", {class:"card"},
+      h("div", {class:"bar", style:"margin-bottom:12px"},
+        pill((counts.HALAL||0) + " halal", "good"), pill((counts.NOT_HALAL||0) + " not halal", "crit"), (counts.UNKNOWN||0) + (counts.NOT_SCREENED||0) ? pill((counts.UNKNOWN||0) + (counts.NOT_SCREENED||0) + " unverified", "warn") : null,
+        h("span", {style:"flex:1"}), addInput, h("button", {class:"btn", onclick: add}, "Add"),
+        h("button", {class:"btn primary", disabled: sc.running, onclick: () => act(() => api("/api/halal/screen", {refresh:true}), "Checking every stock - takes a few minutes")}, sc.running ? "Checking " + sc.done + " / " + sc.total + "…" : "Re-check all")),
+      h("div", {class:"tw"}, h("table", {},
+        h("thead", {}, h("tr", {}, ["Stock","Verdict","Debt %","Cash %","Interest income %","Why","Checked",""].map((c,i) => h("th", {class: i > 1 && i < 5 ? "num" : ""}, c)))),
+        h("tbody", {}, H.rows.map(r => {
+          const blocked = S.config.halal.always_block.includes(r.symbol), allowed = S.config.halal.always_allow.includes(r.symbol);
+          return h("tr", {}, h("td", {}, h("b", {}, r.symbol), h("div", {class:"msg"}, r.name || "")), h("td", {}, pill(label[r.status], kind[r.status])),
+            h("td", {class:"num"}, num(r.debt_pct, 1)), h("td", {class:"num"}, num(r.liquid_pct, 1)), h("td", {class:"num"}, num(r.impure_pct, 1)),
+            h("td", {}, (r.reasons && r.reasons.length ? r.reasons : r.notes && r.notes.length ? r.notes : [r.industry || ""]).join("; ")),
+            h("td", {style:"white-space:nowrap"}, r.checked || "–"),
+            h("td", {style:"white-space:nowrap"},
+              blocked ? h("button", {class:"btn small", onclick: () => act(() => setList("always_block", r.symbol, false))}, "Unblock")
+                : h("button", {class:"btn small", onclick: () => act(() => setList("always_block", r.symbol, true), r.symbol + " blocked")}, "Block"), " ",
+              allowed ? h("button", {class:"btn small", onclick: () => act(() => setList("always_allow", r.symbol, false))}, "Remove override")
+                : r.status !== "HALAL" && !blocked ? h("button", {class:"btn small", onclick: () => confirm("Mark " + r.symbol + " as halal yourself? This skips the automatic screen for it - only do this if a certified screener or your scholar confirms it.") && act(() => setList("always_allow", r.symbol, true))}, "Allow anyway") : null, " ",
+              h("button", {class:"btn small", onclick: () => act(() => api("/api/config", {watchlist: S.config.watchlist.filter(x => x !== r.symbol)}))}, "Remove")));
+        })))))];
+}
+
+function pagePlatforms(){
+  const out = [h("h1", {}, "Trading platforms"), h("p", {class:"sub"}, "Link the account the bot trades on. Keys are saved only on this computer (data/accounts.json) and are never shown again.")];
+  out.push(h("div", {class:"card"}, h("h2", {}, "Linked"),
+    !S.accounts.length ? h("div", {class:"empty"}, "Nothing linked yet. Pick a platform below.") :
+    h("div", {class:"tw"}, h("table", {}, h("tbody", {}, S.accounts.map(a => h("tr", {},
+      h("td", {}, h("b", {}, a.name), h("div", {class:"msg"}, a.platform_name + " · " + a.kind)),
+      h("td", {}, a.paper ? pill("practice money", "info") : pill("REAL MONEY", "warn"), " ", a.active ? pill("bot uses this", "good") : null, " ", a.beta ? pill("beta", "") : null),
+      h("td", {class:"msg"}, Object.entries(a.fields).filter(([k,v]) => typeof v === "string" && v.startsWith("*")).map(([k,v]) => k.replace("_"," ") + " " + v).join(" · ")),
+      h("td", {style:"white-space:nowrap;text-align:right"},
+        a.active ? null : h("button", {class:"btn small", onclick: () => act(() => api("/api/accounts/select", {id:a.id}), "Bot now uses " + a.name)}, "Use this"), " ",
+        h("button", {class:"btn small", onclick: () => act(() => api("/api/accounts/test", {id:a.id}), r => r.message)}, "Test connection"), " ",
+        h("button", {class:"btn small danger", onclick: () => confirm("Remove " + a.name + " and delete its saved keys from this computer?") && act(() => api("/api/accounts/remove", {id:a.id}), "Removed")}, "Remove")))))))));
+  if (addForm){
+    const p = P.platforms.find(x => x.key === addForm), inputs = {};
+    const nameIn = h("input", {value: p.name.replace(" (built in)", ""), maxlength: 40});
+    out.push(h("div", {class:"card"}, h("h2", {}, "Add " + p.name), h("p", {class:"msg"}, p.about),
+      h("b", {}, "How to get what you need"), h("ol", {}, p.steps.map(x => h("li", {}, x))),
+      p.real_only ? h("div", {class:"note warn"}, "This platform has no practice account. Start with Dry run mode and a small budget.") : null,
+      p.beta ? h("div", {class:"note warn"}, "Beta: this connection was written from the platform's documentation and has not been run against a real account yet. Use a paper account first.") : null,
+      h("div", {class:"grid", style:"margin-bottom:14px"}, h("label", {class:"f"}, "Name shown in the app", nameIn),
+        p.fields.map(f => { const el = f.type === "checkbox" ? h("input", {type:"checkbox", checked: f.default !== false}) : h("input", {type: f.secret ? "password" : f.type === "number" ? "number" : "text", value: f.default ?? "", autocomplete:"off", spellcheck:"false"}); inputs[f.key] = el;
+          return f.type === "checkbox" ? h("label", {class:"f", style:"flex-direction:row;align-items:center;gap:8px"}, el, f.label) : h("label", {class:"f"}, f.label, el, f.help ? h("small", {}, f.help) : null); })),
+      h("div", {class:"bar"}, h("button", {class:"btn primary", onclick: async () => {
+          const fields = {}; for (const f of p.fields) fields[f.key] = f.type === "checkbox" ? inputs[f.key].checked : inputs[f.key].value;
+          try { const r = await api("/api/accounts/add", {platform: p.key, name: nameIn.value, fields}); addForm = null; await refresh(true);
+            try { const t = await api("/api/accounts/test", {id: r.id}); toast("Saved. " + t.message); } catch(e){ toast("Saved, but the connection test failed: " + e.message); } }
+          catch(e){ toast(e.message); } }}, "Save and test"),
+        h("button", {class:"btn", onclick: () => { addForm = null; render(); }}, "Cancel"))));
+  } else {
+    out.push(h("h2", {}, "Add a platform"), h("div", {class:"plats"}, (P ? P.platforms : []).map(p => h("div", {class:"plat"},
+      h("div", {class:"bar"}, h("h3", {style:"flex:1"}, p.name), p.beta ? pill("beta", "") : null), h("div", {class:"msg"}, p.kind), h("p", {}, p.about),
+      h("p", {}, h("b", {}, "In Israel: "), p.israel), h("div", {style:"flex:1"}),
+      h("div", {}, h("button", {class:"btn primary", onclick: () => { addForm = p.key; render(); }}, "Add " + p.name.replace(" (built in)", "")))))));
+  }
+  return out;
+}
+
+function pageSettings(){
+  const c = Object.assign({}, S.config, {sip: S.config.strategy.stocks_in_play || {}}), F = {};
+  const fld = (sec, key, label, help, opts) => { const v = c[sec][key]; let el;
+    if (opts) el = h("select", {}, opts.map(([val, l]) => h("option", {value: val, selected: String(v) === String(val)}, l)));
+    else if (typeof v === "boolean") el = h("input", {type:"checkbox", checked: v});
+    else el = h("input", {type: /^\d\d:\d\d$/.test(v) ? "time" : "number", value: v, step:"any"});
+    F[sec + "." + key] = el; return h("label", {class:"f"}, label, el, help ? h("small", {}, help) : null); };
+  const save = () => { const body = {risk:{}, strategy:{}, safety:{}, halal:{}, sip:{}};
+    for (const [k, el] of Object.entries(F)){ const [sec, key] = k.split("."); body[sec][key] = el.type === "checkbox" ? el.checked : el.value; }
+    act(() => api("/api/config", body), r => r.rescreen ? "Saved. Halal limits changed - open the Halal list and press Re-check all." : "Saved. Applies from the bot's next check."); };
+  return [h("h1", {}, "Settings"), h("p", {class:"sub"}, "Limits the bot must stay inside. Times are New York time."),
+    h("div", {class:"card"}, h("h2", {}, "Money and risk"), h("div", {class:"grid"},
+      fld("risk","budget","Budget ($)","the most the bot may use"), fld("risk","max_loss_per_trade_usd","Max loss per trade ($)","sets how many shares it buys"),
+      fld("risk","max_daily_loss_usd","Max loss per day ($)"), fld("risk","max_trades_per_day","Max trades per day"),
+      fld("risk","max_position_pct","Largest position (% of budget)"), fld("risk","max_order_usd","Largest order ($)"), fld("risk","cash_buffer_pct","Always keep in cash (%)"))),
+    h("div", {class:"card"}, h("h2", {}, "Strategy: opening-range breakout"), h("div", {class:"grid"},
+      fld("strategy","stop","Stop-loss at", null, [["or-mid","middle of the opening range"],["or-low","low of the opening range (wider)"],["datr:0.1","10% of the daily ATR (research setting)"],["datr:0.25","25% of the daily ATR"]]),
+      fld("strategy","target","Take profit at", "R = the amount risked per share", [["1R","1 × risk"],["1.5R","1.5 × risk"],["2R","2 × risk"],["3R","3 × risk"],["10R","10 × risk (let it run to the close)"]]),
+      fld("strategy","or_minutes","Opening range (minutes)", null, [["5","5 minutes (research setting)"],["15","15 minutes"],["30","30 minutes"]]),
+      fld("strategy","max_open_positions","Positions open at once"), fld("strategy","max_signal_age_minutes","Ignore breakouts older than (min)"),
+      fld("sip","enabled","Only trade Stocks in Play","breakouts on unusual volume only"), fld("sip","min_rvol","Min relative volume (×)","opening-range volume vs its 14-day average; 1 = normal"),
+      fld("sip","min_atr_usd","Min daily ATR ($)"), fld("sip","require_above_vwap","Price must be above VWAP"),
+      fld("risk","no_entries_before","No new trades before"), fld("risk","no_entries_after","No new trades after"), fld("risk","flat_by","Sell everything by"))),
+    h("div", {class:"card"}, h("h2", {}, "Safety brakes"), h("div", {class:"grid"},
+      fld("safety","max_consecutive_losses","Stop for the day after losses in a row"), fld("safety","max_weekly_loss_usd","Stop for the week after losing ($)"),
+      fld("safety","min_breadth_score","Pause when market health is below","0–100 score from the market-breadth skill"))),
+    h("div", {class:"card"}, h("h2", {}, "Halal screen"), h("div", {class:"grid"},
+      fld("halal","max_debt_pct","Max debt (% of market value)","AAOIFI: 30"), fld("halal","max_liquid_pct","Max cash + interest holdings (%)","AAOIFI: 30"),
+      fld("halal","max_impure_income_pct","Max interest income (% of revenue)","AAOIFI: 5"), fld("halal","exclude_weapons","Exclude weapons makers"))),
+    h("div", {class:"bar"}, h("button", {class:"btn primary", onclick: save}, "Save settings"), h("span", {style:"flex:1"}),
+      h("button", {class:"btn danger", onclick: () => { if (S.bot.running && !confirm("The bot is running. Quit anyway?")) return; api("/api/quit", {}).catch(()=>{}); document.body.replaceChildren(h("main", {}, h("h1", {}, "Stock Bot has been closed."), h("p", {class:"sub"}, "You can close this window."))); }}, "Quit app"))];
+}
+
+function pageLog(){ return [h("h1", {}, "Activity log"), h("p", {class:"sub"}, "Everything the bot decided, newest at the bottom. Full file: data/bot.log"), h("div", {class:"card"}, h("pre", {class:"log"}, S.log.length ? S.log.join("\n") : "Nothing yet."))]; }
+
+// ---------- shell
+const RENDER = {dash: pageDash, trades: pageTrades, halal: pageHalal, platforms: pagePlatforms, settings: pageSettings, log: pageLog};
+function renderNav(){
+  document.getElementById("nav").replaceChildren(h("div", {class:"brand"}, "Halal Stock Bot", h("small", {}, S && S.bot.running ? (S.bot.mode === "dry" ? "running · dry run" : "running · trading") : "stopped")),
+    ...PAGES.map(([k, l]) => h("button", {class: page === k ? "on" : "", onclick: () => go(k)}, l)), h("div", {class:"spacer"}), h("div", {class:"clock"}, S ? "New York: " + S.now : ""));
+}
+function render(){ if (!S) return; renderNav(); const m = document.getElementById("main"), y = m.scrollTop; m.replaceChildren(...RENDER[page]().flat().filter(Boolean)); m.scrollTop = y; if (page === "log"){ const p = m.querySelector("pre"); p.scrollTop = p.scrollHeight; } }
+function go(k){ page = k; history.replaceState(null, "", "#" + k); addForm = null; document.getElementById("main").scrollTop = 0; refresh(true); }
+function busy(){ const a = document.activeElement; return a && ["INPUT","SELECT"].includes(a.tagName); }
+async function refresh(force){
+  try {
+    S = await api("/api/state");
+    if (!P) P = await api("/api/platforms");
+    if (page === "halal") H = await api("/api/halal");
+  } catch(e){ if (force) toast(e.message); return; }
+  if (force || !(busy() || page === "settings" || (page === "platforms" && addForm))) render(); else renderNav();
+}
+refresh(true); setInterval(() => refresh(false), 4000);
+</script>
+</body>
+</html>
