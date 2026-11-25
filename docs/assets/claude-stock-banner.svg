@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260" role="img" aria-labelledby="title desc">
+  <title id="title">Claude Stock — Halal stock trading bot</title>
+  <desc id="desc">A local desktop dashboard for screening stocks, planning trades and monitoring execution. Long only, cash only, intraday.</desc>
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101827"/><stop offset="1" stop-color="#123d39"/></linearGradient></defs>
+  <rect width="1200" height="260" rx="24" fill="url(#bg)"/>
+  <g fill="none" stroke="#5eead4" opacity=".13"><circle cx="1090" cy="130" r="165"/><circle cx="1090" cy="130" r="120"/><circle cx="1090" cy="130" r="75"/></g>
+  <rect x="44" y="40" width="52" height="5" rx="2" fill="#5eead4"/>
+  <g font-family="Segoe UI,Arial,sans-serif">
+    <text x="44" y="105" fill="#f0fdfa" font-size="46" font-weight="700">Claude Stock</text>
+    <text x="44" y="146" fill="#b7d6d0" font-size="24">Halal screening. Trade planning. One desktop dashboard.</text>
+    <g font-size="17" fill="#ccfbf1">
+      <rect x="44" y="184" width="126" height="36" rx="18" fill="#194b46"/><text x="66" y="208">Long only</text>
+      <rect x="184" y="184" width="130" height="36" rx="18" fill="#194b46"/><text x="207" y="208">Cash only</text>
+      <rect x="328" y="184" width="126" height="36" rx="18" fill="#194b46"/><text x="355" y="208">Intraday</text>
+    </g>
+  </g>
+  <g transform="translate(972 70)" fill="none" stroke="#5eead4" stroke-width="3">
+    <rect width="140" height="108" rx="14" fill="#102c32"/>
+    <path d="M16 28h108M48 28v62" stroke="#35605e"/>
+    <path d="M17 44h18M17 58h18M17 72h12M64 48h43M64 65h31M64 82h43" stroke-linecap="round"/>
+    <path d="M70 108v18m-30 0h60" stroke-linecap="round"/>
+  </g>
+</svg>
